@@ -32,6 +32,7 @@ olympus-camera = 'olympuswifi.main:main'
 olympus-liveview = 'olympuswifi.liveview:main'
 olympus-download = 'olympuswifi.download:main'
 olympus-log2gpx = 'olympuswifi.log2gpx:main'
+olympus-schedule = 'olympuswifi.schedule:main'
 
 [project.urls]
 'Documentation' = 'https://olympus-wifi.readthedocs.org'
