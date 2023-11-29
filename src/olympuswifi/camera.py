@@ -515,13 +515,10 @@ class EM10Mk4(OlympusCamera):
         """
 
         self.send_command('switch_cammode', mode='rec')
-        time.sleep(0.5)
         self.send_command('exec_takemisc', com='startliveview', port='5555')
-        time.sleep(0.5)
-
         self.send_command('exec_takemotion', com='starttake')
-        time.sleep(0.5)
         self.send_command('exec_takemotion', com='stoptake')
+        self.send_command('exec_takemisc', com='stopliveview')
 
     def report_model(self) -> None:
         """

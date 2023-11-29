@@ -1,7 +1,7 @@
 import argparse, sys
 from typing import Dict, Optional
 
-from .camera import OlympusCamera, RequestError, ResultError
+from .camera import OlympusCamera, RequestError, ResultError, EM10Mk4
 from .liveview import LiveViewWindow
 from .download import download_photos
 
@@ -149,7 +149,7 @@ def main() -> None:
     args = parser.parse_args()
 
     # Connect to camera.
-    camera = OlympusCamera()
+    camera = EM10Mk4()
 
     # Report camera model.
     camera.report_model()
