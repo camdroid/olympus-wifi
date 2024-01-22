@@ -6,7 +6,7 @@ from .camera import OlympusCamera
 #    Function download_photos() downloads photos from the Olympus camera.    #
 ##############################################################################
 
-def download_photos(camera: OlympusCamera, output_dir: str) -> None:
+def download_photos(camera: OlympusCamera, output_dir: str, image_path: str) -> None:
     """
     Function download_photos() downloads photos from the Olympus camera.
 
@@ -15,6 +15,10 @@ def download_photos(camera: OlympusCamera, output_dir: str) -> None:
     :returns: nothing; warnings are written to *stdout*
     """
     for cam_file in camera.list_images():
+        # hacky way to only download the image I want
+        if image_path is not None and cam_file.file_name != image_path:
+            continue
+        # import pdb; pdb.set_trace()
         local_dir = os.path.join(os.path.expanduser('~'), 'Pictures',
                                  cam_file.date_time[:4]) if output_dir is None\
                                                          else output_dir

@@ -5,6 +5,10 @@ from dataclasses import dataclass   # needs Python 3.7 or later
 from typing import List, Dict, Optional, Set, Union
 
 import requests # on Ubuntu install with "apt install -y python3-requests"
+import threading
+import json
+import logging
+import pdb
 
 
 ###############################################################################
@@ -32,6 +36,11 @@ class ResultError(Exception):
     """
     def __init__(self, msg: str, response: requests.Response):
         super().__init__(msg)
+        if '520' in msg:
+            print(f'\n\n\nWARNING!!!!')
+            pdb.set_trace()
+            pass
+
         self.response = response
 
 
@@ -106,7 +115,7 @@ class OlympusCamera:
                             self.CmdDescr(http_method.attrib['type'],
                                           self.commandlist_cmds(http_method))
             elif elem.tag == 'support':
-                self. supported.add(elem.attrib['func'])
+                self.supported.add(elem.attrib['func'])
             elif 'version' in elem.tag:
                 self.versions[elem.tag] = elem.text.strip()
 
@@ -123,6 +132,29 @@ class OlympusCamera:
 
         # Switch to mode 'play'.
         self.send_command('switch_cammode', mode='play')
+
+    def refresh_camprops(self) -> None:
+        possible_camprops = ['touchactiveframe', 'takemode', 'drivemode',
+                             'focalvalue', 'expcomp', 'shutspeedvalue',
+                             'isospeedvalue', 'wbvalue', 'noisereduction',
+                             'lowvibtime', 'bulbtimelimit', 'artfilter',
+                             'digitaltelecon', 'exposemovie',
+                             'cameradrivemode', 'colorphase', 'SceneSub',
+                             'SilentNoiseReduction', 'SilentTime',
+                             'ArtEffectTypePopart',
+                             'ArtEffectTypeRoughMonochrome',
+                             'ArtEffectTypeToyPhoto', 'ArtEffectTypeDaydream',
+                             'ArtEffectTypeCrossProcess',
+                             'ArtEffectTypeDramaticTone',
+                             'ArtEffectTypeLigneClair', 'ArtEffectTypePastel',
+                             'ArtEffectTypeMiniature',
+                             'ArtEffectTypeVintage', 'ArtEffectTypePartcolor',
+                             'ArtEffectTypeBleachBypass']
+
+        self.logger.debug('Fetching values for all camprops')
+        values = {name: self.get_camprop(name) for name in possible_camprops}
+        self.logger.debug('Done')
+        return values
 
     def commandlist_params(self, parent: ElementTree.Element) \
                                                    -> Dict[str, Optional[dict]]:
@@ -297,8 +329,7 @@ class OlympusCamera:
         :returns: value of *propname*
         """
         self.send_command('switch_cammode', mode='rec')
-        result = self.xml_query('get_camprop', com='get',
-                                propname=propname)
+        result = self.xml_query('get_camprop', com='get', propname=propname)
         assert isinstance(result, dict) and 'value' in result
         return result['value']
 
@@ -509,16 +540,71 @@ class OlympusCamera:
             print(f"Connected to Olympus {model}, {versions}.")
 
 class EM10Mk4(OlympusCamera):
+    # def __init__(self):
+    #     super()
+    #     self.logger = logging.getLogger('camera-logger')
+    #     level = logging.getLevelName('INFO')
+    #     self.logger.setLevel(level)
+    #     handler = logging.StreamHandler(sys.stdout)
+    #     #Create a formatter for the logs
+    #     formatter = logging.Formatter(    '%(created)f:%(levelname)s:%(name)s:%(module)s:%(message)s')
+    #     #Set the created formatter as the formatter of the handler
+    #     handler.setFormatter(formatter)
+    #     #Add the created handler to this logger
+    #     self.logger.addHandler(handler)
+
+
+    def wait_for_picture(self, duration):
+        print(f'Waiting for {exposure} for the picture to be taken')
+        # exposure = self.get_camprop('shutspeedvalue')
+        exposure = 60 # seconds
+        duration = datetime.datetime.duration(seconds=exposure)
+        pdb.set_trace()
+        print(f'Done taking picture')
+
     def take_picture(self) -> None:
         """
         The camera takes a picture.
         """
+        self.logger.info('Taking picture')
 
+        # What happens if the shutspeedvalue is greater than the gap between iterations?
+        # Today (2024-01-21), the program seems to wait for 
         self.send_command('switch_cammode', mode='rec')
         self.send_command('exec_takemisc', com='startliveview', port='5555')
+        self.logger.debug('Sending command to take picture')
+        start_time = time.time()
         self.send_command('exec_takemotion', com='starttake')
+        mid_time = time.time()
         self.send_command('exec_takemotion', com='stoptake')
         self.send_command('exec_takemisc', com='stopliveview')
+        stop_time = time.time()
+        self.logger.debug(f'Time between commands sent: {mid_time - start_time} seconds.')
+        self.logger.debug(f'Time between start and stop: {stop_time - start_time} seconds.')
+        if stop_time - start_time < 4:
+            self.logger.warn(f'Exposure only {stop_time - start_time} seconds. Failed.')
+        if self.logger.level == logging.DEBUG:
+            self.logger.debug('Downloading latest image')
+            self.download_latest_image()
+
+    def download_latest_image(self):
+        images = self.list_images()
+        last_image_name = images[-1].file_name
+        self.logger.debug(f'Downloading latest image: {last_image_name}')
+        from .download import download_photos
+        download_photos(self, None, last_image_name)
+        
+        name = last_image_name.split('/')[-1]
+        from PIL import Image
+        image = Image.open(f'/Users/cam/Pictures/2024/{name}')
+
+        exposure_exif = 33434
+        from PIL.ExifTags import TAGS
+        pdb.set_trace()
+        pass
+
+
+
 
     def report_model(self) -> None:
         """
@@ -534,3 +620,6 @@ class EM10Mk4(OlympusCamera):
             versions = ', '.join([f'{key} {value}' for key, value in
                                   self.get_versions().items()])
             print(f"Connected to Olympus {model}, {versions}.")
+
+    def set_logger(self, logger):
+        self.logger = logger

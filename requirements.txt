@@ -1,2 +1,11 @@
-Pillow
-requests
+certifi==2023.11.17
+charset-normalizer==3.3.2
+exif==1.6.0
+ExifRead==3.0.0
+idna==3.6
+-e git+ssh://git@github.com/camdroid/olympus-wifi.git@6e0d8a4d794e57f5e7a837bb47b203f194aea1df#egg=olympuswifi
+Pillow==10.1.0
+plum-py==0.8.7
+requests==2.31.0
+tk==0.1.0
+urllib3==2.1.0

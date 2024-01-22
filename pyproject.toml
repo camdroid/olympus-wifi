@@ -33,6 +33,7 @@ olympus-liveview = 'olympuswifi.liveview:main'
 olympus-download = 'olympuswifi.download:main'
 olympus-log2gpx = 'olympuswifi.log2gpx:main'
 olympus-calibrate = 'olympuswifi.calibrate:main'
+olympus-lights = 'olympuswifi.lights:main'
 
 [project.urls]
 'Documentation' = 'https://olympus-wifi.readthedocs.org'
